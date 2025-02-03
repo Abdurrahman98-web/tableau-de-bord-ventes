@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord des Ventes</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Tableau de Bord des Ventes</h2>
+        <form id="salesForm">
+            <div class="form-group">
+                <label for="productName">Nom du produit:</label>
+                <input type="text" class="form-control" id="productName" name="productName" required>
+            </div>
+            <div class="form-group">
+                <label for="productPrice">Prix du produit:</label>
+                <input type="number" step="any" class="form-control" id="productPrice" name="productPrice" required>
+            </div>
+            <div class="form-group">
+                <label for="productQuantity">Quantité:</label>
+                <input type="number" class="form-control" id="productQuantity" name="productQuantity" required>
+            </div>
+            <div class="form-group">
+                <label for="totalAmount">Montant Total:</label>
+                <input type="number" step="any" class="form-control" id="totalAmount" name="totalAmount" readonly>
+            </div>
+            <button type="submit" class="btn btn-primary">Soumettre</button>
+        </form>
+
+        <h3 class="mt-5">Liste des Ventes</h3>
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Nom du produit</th>
+                    <th>Prix du produit</th>
+                    <th>Quantité</th>
+                    <th>Montant Total</th>
+                </tr>
+            </thead>
+            <tbody id="salesList">
+                <!-- Liste des ventes -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            function calculateTotalAmount() {
+                const price = parseFloat($('#productPrice').val()) || 0;
+                const quantity = parseInt($('#productQuantity').val()) || 0;
+                const total = price * quantity;
+                $('#totalAmount').val(total.toFixed(2));
+            }
+
+            $('#productPrice, #productQuantity').on('input', calculateTotalAmount);
+
+            $('#salesForm').on('submit', function(e) {
+                e.preventDefault();
+                const data = {
+                    productName: $('#productName').val(),
+                    productPrice: parseFloat($('#productPrice').val()),
+                    productQuantity: parseInt($('#productQuantity').val()),
+                    totalAmount: parseFloat($('#totalAmount').val())
+                };
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/transactions',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        alert('Données soumises avec succès!');
+                        $('#salesForm')[0].reset();
+                        calculateTotalAmount();
+                        loadSales();
+                    },
+                    error: function(error) {
+                        alert('Erreur lors de la soumission des données.');
+                    }
+                });
+            });
+
+            function loadSales() {
+                $.ajax({
+                    type: 'GET',
+                    url: '/api/transactions',
+                    success: function(response) {
+                        const salesList = $('#salesList');
+                        salesList.empty();
+                        response.forEach(sale => {
+                            salesList.append(`
+                                <tr>
+                                    <td>${sale.productName}</td>
+                                    <td>${sale.productPrice ? sale.productPrice.toFixed(2) : 'N/A'}</td>
+                                    <td>${sale.productQuantity}</td>
+                                    <td>${sale.totalAmount ? sale.totalAmount.toFixed(2) : 'N/A'}</td>
+                                </tr>
+                            `);
+                        });
+                    },
+                    error: function(error) {
+                        alert('Erreur lors de la récupération des ventes.');
+                    }
+                });
+            }
+
+            // Initial load
+            loadSales();
+        });
+    </script>
+</body>
+</html>
